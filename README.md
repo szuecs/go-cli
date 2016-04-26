@@ -7,11 +7,12 @@ CLI Apps.
 To create a new CLI application, you can do the following steps
 
     APP=<appname>
-    DST=$GOPATH/src/<repo-hoster>/<user>/$APP
-    mkdir -p $DST
+    DST=<repo-hoster>/<user>/$APP
+    mkdir -p $GOPATH/src/$DST
     go get -u github.com/szuecs/go-cli
-    rsync -a --exclude=.git $GOPATH/src/github.com/szuecs/go-cli/ $DST
-    cd $DST
+    rsync -a --exclude=.git $GOPATH/src/github.com/szuecs/go-cli/ $GOPATH/src/$DST
+    cd $GOPATH/src/$DST
+    grep -rl go-cli | xargs sed -i "s@github.com/szuecs/go-cli@$DST@g"
     grep -rl go-cli | xargs sed -i "s@go-cli@$APP@g"
     mv cmd/go-cli cmd/$APP
 

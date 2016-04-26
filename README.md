@@ -18,8 +18,8 @@ To create a new CLI application, you can do the following steps
 
 
 The main package and function of the CLI app is in
-cmd/$APP/main.go. It parses flags and merges the configuration to
-start the application.
+main.go. It parses flags, lookups ENV and merges the configuration to
+start your CLI application.
 
 Configuring your client, use the following make target:
 

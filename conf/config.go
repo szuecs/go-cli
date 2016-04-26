@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -33,12 +35,55 @@ func New() (*Config, error) {
 	var err error
 	if conf == nil {
 		conf, err = configInit("config.yaml")
+		replaceConfigFromENV(conf)
 	}
+	fmt.Printf("conf: %+v\n", conf)
 	return conf, err
 }
 
 // PROJECTNAME TODO: should be replaced in your application
 const PROJECTNAME string = "go-cli"
+
+func replaceConfigFromENV(cfg *Config) {
+	envprefix := strings.Replace(PROJECTNAME, "-", "", -1)
+	viper.SetEnvPrefix(envprefix)
+	viper.AutomaticEnv()
+
+	getAndSetEnvBool(&cfg.DebugEnabled, "DEBUG")
+	getAndSetEnvBool(&cfg.Oauth2Enabled, "OAUTH2")
+	getAndSetEnvBool(&cfg.ProfilingEnabled, "PROFILING")
+
+	getAndSetEnvString(&cfg.URL, "URL")
+	getAndSetEnvString(&cfg.AuthURL, "AUTHURL")
+	getAndSetEnvString(&cfg.TokenURL, "TOKENURL")
+	getAndSetEnvString(&cfg.Username, "USERNAME")
+
+	getAndSetEnvDuration(&cfg.LogFlushInterval, "LOGFLUSH")
+}
+
+func getAndSetEnvString(target *string, env string) {
+	if envVar := viper.Get(env); envVar != nil {
+		*target = envVar.(string)
+	}
+}
+
+func getAndSetEnvBool(target *bool, env string) {
+	if envVar := viper.Get(env); envVar != nil {
+		*target = envVar.(bool)
+	}
+}
+
+func getAndSetEnvDuration(target *time.Duration, env string) {
+	if envVar := viper.Get(env); envVar != nil {
+		s := envVar.(string)
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			fmt.Printf("Can not convert string to int for ENV: %s, caused by: %s\n", env, err)
+		} else {
+			*target = time.Duration(n) * time.Second
+		}
+	}
+}
 
 // FIXME: not windows compatible
 func configInit(filename string) (*Config, error) {

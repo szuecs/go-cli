@@ -28,7 +28,7 @@ func main() {
 		debug       = kingpin.Flag("debug", "enable debug mode").Default("false").Bool()
 		username    = kingpin.Flag("username", "Set username to authenticate with.").Default("").String()
 		oauth2Token = kingpin.Flag("oauth2-token", "Set OAuth2 Access Token.").Default("").String()
-		baseURL     = kingpin.Flag("url", "Set Base URL.").Default("http://127.0.0.1:8080").String()
+		baseURL     = kingpin.Flag("url", "Set Base URL.").Default("").String()
 		_           = kingpin.Command("example", "Handle example subcmd.")
 		_           = kingpin.Command("version", "show version")
 	)

@@ -4,27 +4,28 @@ package conf
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v1"
+
+	"github.com/golang/glog"
 )
 
 // Config is the configuration struct. The config file config.yaml
 // will unmarshaled to this struct.
 type Config struct {
-	DebugEnabled     bool
-	Oauth2Enabled    bool
-	ProfilingEnabled bool
-	LogFlushInterval time.Duration
-	URL              string
-	RealURL          *url.URL //RealURL to our service endpoint parsed from URL
-	AuthURL          string
-	TokenURL         string
-	Username         string //user to authenticate with, to get a token
+	DebugEnabled     bool          `yaml:"debug_enabled,omitempty"`
+	Oauth2Enabled    bool          `yaml:"oauth2_enabled,omitempty"`
+	ProfilingEnabled bool          `yaml:"profiling_enabled,omitempty"`
+	LogFlushInterval time.Duration `yaml:"log_flush_interval,omitempty"`
+	URL              string        `yaml:"url,omitempty"`
+	RealURL          *url.URL      //RealURL to our service endpoint parsed from URL
+	AuthURL          string        `yaml:"auth_url,omitempty"`
+	TokenURL         string        `yaml:"token_url,omitempty"`
+	Username         string        `yaml:"user,omitempty"`
 }
 
 // shared state for configuration
@@ -35,70 +36,36 @@ func New() (*Config, error) {
 	var err error
 	if conf == nil {
 		conf, err = configInit("config.yaml")
-		replaceConfigFromENV(conf)
 	}
-	fmt.Printf("conf: %+v\n", conf)
 	return conf, err
 }
 
 // PROJECTNAME TODO: should be replaced in your application
 const PROJECTNAME string = "go-cli"
 
-func replaceConfigFromENV(cfg *Config) {
-	envprefix := strings.Replace(PROJECTNAME, "-", "", -1)
-	viper.SetEnvPrefix(envprefix)
-	viper.AutomaticEnv()
-
-	getAndSetEnvBool(&cfg.DebugEnabled, "DEBUG")
-	getAndSetEnvBool(&cfg.Oauth2Enabled, "OAUTH2")
-	getAndSetEnvBool(&cfg.ProfilingEnabled, "PROFILING")
-
-	getAndSetEnvString(&cfg.URL, "URL")
-	getAndSetEnvString(&cfg.AuthURL, "AUTHURL")
-	getAndSetEnvString(&cfg.TokenURL, "TOKENURL")
-	getAndSetEnvString(&cfg.Username, "USERNAME")
-
-	getAndSetEnvDuration(&cfg.LogFlushInterval, "LOGFLUSH")
-}
-
-func getAndSetEnvString(target *string, env string) {
-	if envVar := viper.Get(env); envVar != nil {
-		*target = envVar.(string)
+func readFile(filepath string) ([]byte, bool) {
+	b, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		return b, false
 	}
-}
-
-func getAndSetEnvBool(target *bool, env string) {
-	if envVar := viper.Get(env); envVar != nil {
-		*target = envVar.(bool)
-	}
-}
-
-func getAndSetEnvDuration(target *time.Duration, env string) {
-	if envVar := viper.Get(env); envVar != nil {
-		s := envVar.(string)
-		n, err := strconv.Atoi(s)
-		if err != nil {
-			fmt.Printf("Can not convert string to int for ENV: %s, caused by: %s\n", env, err)
-		} else {
-			*target = time.Duration(n) * time.Second
-		}
-	}
+	return b, true
 }
 
 // FIXME: not windows compatible
 func configInit(filename string) (*Config, error) {
-	viper := viper.New()
-	viper.SetConfigType("yaml")
-	viper.SetConfigName("config")
-	viper.AddConfigPath(fmt.Sprintf("/etc/%s", PROJECTNAME))
-	viper.AddConfigPath(fmt.Sprintf("%s/.config/%s", os.ExpandEnv("$HOME"), PROJECTNAME))
-
-	err := viper.ReadInConfig()
-	if err != nil {
-		return nil, fmt.Errorf("configuration format is not correct, caused by: %s", err)
+	globalConfig := fmt.Sprintf("/etc/%s/config.yaml", PROJECTNAME)
+	homeConfig := fmt.Sprintf("%s/.config/%s/config.yaml", os.ExpandEnv("$HOME"), PROJECTNAME)
+	b, ok := readFile(homeConfig)
+	if !ok {
+		b, ok = readFile(globalConfig)
 	}
-
+	if !ok {
+		return nil, fmt.Errorf("No file readable in %v nor in %v", globalConfig, homeConfig)
+	}
 	var config Config
-	err = viper.Unmarshal(&config)
+	err := yaml.Unmarshal(b, &config)
+	if err != nil {
+		glog.Fatalf("configuration could not be unmarshaled, caused by: %s", err)
+	}
 	return &config, err
 }

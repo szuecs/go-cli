@@ -14,7 +14,6 @@ To create a new CLI application, you can do the following steps
     cd $GOPATH/src/$DST
     grep -rl go-cli | xargs sed -i "s@github.com/szuecs/go-cli@$DST@g"
     grep -rl go-cli | xargs sed -i "s@go-cli@$APP@g"
-    mv cmd/go-cli cmd/$APP
 
 
 The main package and function of the CLI app is in

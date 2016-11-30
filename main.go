@@ -5,9 +5,12 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"time"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
+	"github.com/google/gops/agent"
+	log "github.com/sirupsen/logrus"
 	"github.com/szuecs/go-cli/client"
 	"github.com/szuecs/go-cli/conf"
 )
@@ -22,6 +25,13 @@ var Githash = "Not set"
 
 // Version is used to store the tagged version of the build
 var Version = "Not set"
+
+func init() {
+	if err := agent.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+}
 
 func main() {
 	var (
@@ -38,6 +48,7 @@ func main() {
 		fmt.Println("Example subcommand will create a client object and GET somethhing from passed URL")
 		cli := createClient(*baseURL, *oauth2Token, *username, *debug)
 		cli.Get(cli.Config.RealURL)
+		time.Sleep(time.Second * 600)
 	case "version":
 		fmt.Printf(`%s Version: %s
 ================================
